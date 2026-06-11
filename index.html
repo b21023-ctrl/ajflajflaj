@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plearner - 맞춤형 자동 제안 플래너</title>
+    <style>
+        /* ==========================================================================
+           1. 기획서 기준 UI/UX 디자인 정의
+           ========================================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            padding: 20px;
+        }
+
+        .container-fluid {
+            width: 100%;
+            max-width: 1650px;
+            padding: 25px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 공통 폼 컴포넌트 */
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            background-color: #357abd;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 10px;
+            background-color: #2d3748;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* 📢 기획 준수: 극대화된 성향 모드 가동 중 대형 팝업 모달 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 15, 30, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            backdrop-filter: blur(5px);
+        }
+
+        .big-popup {
+            background: #ffffff;
+            padding: 45px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            border: 4px solid #4a90e2;
+            max-width: 550px;
+            width: 90%;
+            animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes bounceIn {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .big-popup h2 {
+            color: #4a90e2;
+            font-size: 32px;
+            margin-bottom: 20px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .big-popup p {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #334155;
+            margin-bottom: 30px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        /* 원본 설문 템플릿 */
+        .auth-box, .survey-box {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .survey-question {
+            background: #f8fafc;
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .survey-question p {
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 14.5px;
+            color: #1e293b;
+        }
+
+        .radio-option {
+            display: block;
+            margin: 8px 0;
+            cursor: pointer;
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        .radio-option input {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        /* 요일별 자습 시간 구조 */
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .time-input-box {
+            text-align: center;
+            font-size: 12.5px;
+            font-weight: 600;
+        }
+
+        .time-input-box input {
+            padding: 8px;
+            text-align: center;
+            margin-top: 4px;
+            font-weight: bold;
+        }
+
+        /* 과목 목록 직접 작성 양식 */
+        .custom-sub-add {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .custom-sub-add input { margin: 0; }
+        .custom-sub-add button { width: auto; white-space: nowrap; }
+
+        /* 취약과목 가변 우선순위 정렬 공간 */
+        .priority-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .priority-item {
+            background: #ffffff;
+            padding: 12px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            color: #2d3748;
+        }
+
+        .priority-item::before {
+            content: '☰';
+            margin-right: 10px;
+            color: #94a3b8;
+        }
+
+        .priority-item.sorting {
+            opacity: 0.3;
+            background: #f1f5f9;
+        }
+
+        /* 메인 플래너 대시보드 */
+        .planner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+        }
+
+        .status-alert {
+            background-color: #f0fdf4;
+            color: #166534;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13.5px;
+            border: 1px solid #bbf7d0;
+        }
+
+        .planner-layout {
+            display: grid;
+            grid-template-columns: 330px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sidebar-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        }
+
+        .sidebar-card h3 {
+            font-size: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #4a90e2;
+            padding-left: 8px;
+        }
+
+        .automated-suggest {
+            padding: 14px;
+            background-color: #fffaf0;
+            border-left: 4px solid #dd6b20;
+            border-radius: 4px;
+            font-size: 12.5px;
+            line-height: 1.65;
+            color: #4a5568;
+        }
+
+        /* 주간 달력 컬럼 배치 */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .day-column {
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            min-height: 700px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .day-header {
+            background: #edf2f7;
+            padding: 12px 4px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+
+        .day-time-badge {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: normal;
+            display: block;
+            margin-top: 3px;
+            background: #ffffff;
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .task-list {
+            padding: 10px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #ffffff;
+        }
+
+        .task-list.dragover {
+            background-color: #f1f5f9;
+            outline: 2px dashed #4a90e2;
+            outline-offset: -4px;
+        }
+
+        /* 기획서 명시 과목별 지정 색상 카드 */
+        .task-card {
+            padding: 10px;
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: grab;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            line-height: 1.4;
+        }
+
+        .task-card .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.28);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+
+        /* 색상 코드 규칙 */
+        .subject-kor
